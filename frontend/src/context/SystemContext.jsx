@@ -3,7 +3,7 @@ import { io } from 'socket.io-client';
 import { toast } from 'react-toastify';
 
 const SystemContext = createContext();
-const BACKEND_URL = 'http://localhost:5001';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://shadexflow-backend.onrender.com';
 
 export const SystemProvider = ({ children }) => {
   const [state, setState] = useState({
