@@ -30,36 +30,20 @@ io.on('connection', (socket) => {
   });
 });
 
-// Hardware / Sensor Simulation Loop
+// Sensor Loop (Auto checks)
 setInterval(() => {
   let state = getState();
   let changed = false;
-
-  // Simulate random temperature changes between 15C and 35C
-  const tempChange = (Math.random() - 0.5) * 2; // -1 to +1
-  let newTemp = state.temperature + tempChange;
-  newTemp = Math.max(15, Math.min(35, newTemp));
-  
-  if (Math.abs(state.temperature - newTemp) > 0.5) {
-    state.temperature = parseFloat(newTemp.toFixed(1));
-    changed = true;
-  }
-
-  // Simulate random rain changes (5% chance to toggle state every 3 seconds)
-  if (Math.random() < 0.05) {
-    state.isRaining = !state.isRaining;
-    changed = true;
-  }
 
   // Automatic Window Control Logic
   if (state.mode === 'auto') {
     if (state.isRaining && state.windowState !== 'closed') {
       state.windowState = 'closed';
       changed = true;
-    } else if (!state.isRaining && state.temperature > 28 && state.windowState !== 'open') {
+    } else if (!state.isRaining && state.temperature > state.autoOpenTemp && state.windowState !== 'open') {
       state.windowState = 'open';
       changed = true;
-    } else if (!state.isRaining && state.temperature <= 28 && state.windowState !== 'closed') {
+    } else if (!state.isRaining && state.temperature <= state.autoOpenTemp && state.windowState !== 'closed') {
       state.windowState = 'closed';
       changed = true;
     }
@@ -69,7 +53,7 @@ setInterval(() => {
     setState(state);
     io.emit('stateUpdate', getState());
   }
-}, 3000); // Run simulation every 3 seconds
+}, 3000); // Run check every 3 seconds
 
 const PORT = process.env.PORT || 5001;
 server.listen(PORT, () => {

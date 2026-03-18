@@ -2,7 +2,7 @@ import React from 'react';
 import { useSystem } from '../context/SystemContext';
 import { Thermometer, CloudRain, Wind } from 'lucide-react';
 
-export default function SensorCard({ title, value, type, active }) {
+export default function SensorCard({ title, value, type }) {
   const { state } = useSystem();
   
   let Icon = Wind;

@@ -15,7 +15,7 @@ function App() {
         </div>
 
         {/* Floating UI Dashboard overlay */}
-        <div className="absolute inset-0 z-10 pointer-events-none flex p-6 md:p-8">
+        <div className="absolute inset-0 z-10 pointer-events-none flex p-4 md:p-8 overflow-y-auto overflow-x-hidden no-scrollbar">
           <Dashboard />
         </div>
 

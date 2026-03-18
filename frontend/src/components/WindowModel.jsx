@@ -1,37 +1,47 @@
-import React, { useRef } from 'react';
-import { useSpring, a } from '@react-spring/three';
+import React, { useState } from 'react';
+// eslint-disable-next-line no-unused-vars
+import { useSpring, animated } from '@react-spring/three';
 import { useSystem } from '../context/SystemContext';
 import * as THREE from 'three';
 
 export default function WindowModel() {
   const { state } = useSystem();
   const isOpen = state.windowState === 'open';
+  const [hovered, setHovered] = useState(false);
 
-  // Animate the rotation of the window hinges based on isOpen state
-  const { hingeRotation } = useSpring({
-    hingeRotation: isOpen ? -Math.PI / 2.5 : 0,
-    config: { mass: 2, tension: 170, friction: 50 }
+  // Upgraded: bouncy hinge rotation, subtle scale on hover, and color change
+  const { hingeRotation, windowScale, frameColor } = useSpring({
+    hingeRotation: isOpen ? Math.PI / 2.2 : 0,
+    windowScale: hovered ? 1.05 : 1.0,
+    frameColor: hovered ? "#2c5282" : "#1a202c",
+    config: { mass: 1.5, tension: 220, friction: 12 }
   });
 
   const glassMaterial = new THREE.MeshPhysicalMaterial({
     color: 0xffffff,
-    transmission: 0.9,
+    transmission: 0.95,
     opacity: 1,
-    metalness: 0,
-    roughness: 0.1,
+    metalness: 0.1,
+    roughness: 0.05,
     ior: 1.5,
-    thickness: 0.1,
+    thickness: 0.2,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.1,
     attenuationColor: 0xffffff,
-    attenuationDistance: 1,
+    attenuationDistance: 2,
   });
 
   return (
-    <group>
+    <animated.group 
+      scale={windowScale}
+      onPointerOver={(e) => { e.stopPropagation(); setHovered(true); }}
+      onPointerOut={(e) => { e.stopPropagation(); setHovered(false); }}
+    >
       {/* Wall/Frame Cutout */}
-      <mesh position={[0, 1.5, -0.05]} castShadow receiveShadow>
+      <animated.mesh position={[0, 1.5, -0.05]} castShadow receiveShadow>
         <boxGeometry args={[4.2, 3.2, 0.2]} />
-        <meshStandardMaterial color="#1a202c" />
-      </mesh>
+        <animated.meshStandardMaterial color={frameColor} />
+      </animated.mesh>
       
       {/* Inner Frame */}
       <mesh position={[0, 1.5, 0]} castShadow receiveShadow>
@@ -46,24 +56,24 @@ export default function WindowModel() {
       </mesh>
 
       {/* Left Pane (Swings open outward) */}
-      <a.group position={[-2, 1.5, 0]} rotation-y={hingeRotation.to(r => -r)}>
+      <animated.group position={[-2, 1.5, 0]} rotation-y={hingeRotation.to(r => -r)}>
         <mesh position={[1, 0, 0]} castShadow>
           <boxGeometry args={[1.9, 2.9, 0.05]} />
           <meshStandardMaterial color="#cbd5e0" />
         </mesh>
         {/* Glass */}
         <mesh position={[1, 0, 0]} geometry={new THREE.BoxGeometry(1.8, 2.8, 0.06)} material={glassMaterial} />
-      </a.group>
+      </animated.group>
 
       {/* Right Pane (Swings open outward) */}
-      <a.group position={[2, 1.5, 0]} rotation-y={hingeRotation}>
+      <animated.group position={[2, 1.5, 0]} rotation-y={hingeRotation}>
         <mesh position={[-1, 0, 0]} castShadow>
           <boxGeometry args={[1.9, 2.9, 0.05]} />
           <meshStandardMaterial color="#cbd5e0" />
         </mesh>
         {/* Glass */}
         <mesh position={[-1, 0, 0]} geometry={new THREE.BoxGeometry(1.8, 2.8, 0.06)} material={glassMaterial} />
-      </a.group>
-    </group>
+      </animated.group>
+    </animated.group>
   );
 }

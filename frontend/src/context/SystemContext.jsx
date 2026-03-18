@@ -10,7 +10,8 @@ export const SystemProvider = ({ children }) => {
     temperature: 20,
     isRaining: false,
     windowState: 'closed',
-    mode: 'auto'
+    mode: 'auto',
+    autoOpenTemp: 28
   });
   
   const [logs, setLogs] = useState([]);
@@ -49,7 +50,7 @@ export const SystemProvider = ({ children }) => {
       const data = await res.json();
       setState(data.state);
       setLogs(prev => [{ time: new Date().toLocaleTimeString(), message: 'Window manually opened', type: 'manual' }, ...prev].slice(0, 10));
-    } catch (err) {
+    } catch {
       toast.error('Failed to open window');
     }
   };
@@ -60,7 +61,7 @@ export const SystemProvider = ({ children }) => {
       const data = await res.json();
       setState(data.state);
       setLogs(prev => [{ time: new Date().toLocaleTimeString(), message: 'Window manually closed', type: 'manual' }, ...prev].slice(0, 10));
-    } catch (err) {
+    } catch {
       toast.error('Failed to close window');
     }
   };
@@ -75,16 +76,47 @@ export const SystemProvider = ({ children }) => {
       const data = await res.json();
       setState(data.state);
       setLogs(prev => [{ time: new Date().toLocaleTimeString(), message: `Switched to ${mode} mode`, type: 'system' }, ...prev].slice(0, 10));
-    } catch (err) {
+    } catch {
       toast.error('Failed to toggle mode');
     }
   };
 
+  const updateWeather = async (temperature, isRaining) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/weather`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ temperature, isRaining })
+      });
+      const data = await res.json();
+      setState(data.state);
+      // Optional: add a log
+    } catch {
+      console.error('Failed to update weather');
+    }
+  };
+
+  const updateSettings = async (autoOpenTemp) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ autoOpenTemp })
+      });
+      const data = await res.json();
+      setState(data.state);
+      setLogs(prev => [{ time: new Date().toLocaleTimeString(), message: `Auto-open threshold set to ${autoOpenTemp}°C`, type: 'system' }, ...prev].slice(0, 10));
+    } catch {
+      toast.error('Failed to update settings');
+    }
+  };
+
   return (
-    <SystemContext.Provider value={{ state, logs, openWindow, closeWindow, toggleMode }}>
+    <SystemContext.Provider value={{ state, logs, openWindow, closeWindow, toggleMode, updateWeather, updateSettings }}>
       {children}
     </SystemContext.Provider>
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useSystem = () => useContext(SystemContext);

@@ -5,7 +5,8 @@ let state = {
   temperature: 20,
   isRaining: false,
   windowState: 'closed', // 'open' | 'closed'
-  mode: 'auto' // 'auto' | 'manual'
+  mode: 'auto', // 'auto' | 'manual'
+  autoOpenTemp: 28 // user-configurable threshold
 };
 
 // GET current status
@@ -33,6 +34,27 @@ router.post('/window/close', (req, res) => {
   req.app.get('io').emit('stateUpdate', state);
 });
 
+// POST settings (autoOpenTemp)
+router.post('/settings', (req, res) => {
+  const { autoOpenTemp } = req.body;
+  if (typeof autoOpenTemp === 'number') {
+    state.autoOpenTemp = autoOpenTemp;
+
+    // Trigger auto logic immediately check on threshold change
+    if (state.mode === 'auto') {
+      if (state.isRaining && state.windowState !== 'closed') {
+        state.windowState = 'closed';
+      } else if (!state.isRaining && state.temperature > state.autoOpenTemp && state.windowState !== 'open') {
+        state.windowState = 'open';
+      } else if (!state.isRaining && state.temperature <= state.autoOpenTemp && state.windowState !== 'closed') {
+        state.windowState = 'closed';
+      }
+    }
+  }
+  res.json({ success: true, state });
+  req.app.get('io').emit('stateUpdate', state);
+});
+
 // POST toggle mode
 router.post('/mode', (req, res) => {
   const { mode } = req.body;
@@ -42,11 +64,34 @@ router.post('/mode', (req, res) => {
     if (mode === 'auto') {
       if (state.isRaining) {
         state.windowState = 'closed';
-      } else if (state.temperature > 28) {
+      } else if (state.temperature > state.autoOpenTemp) {
         state.windowState = 'open';
+      } else if (state.temperature <= state.autoOpenTemp) {
+        state.windowState = 'closed';
       }
     }
   }
+  res.json({ success: true, state });
+  req.app.get('io').emit('stateUpdate', state);
+});
+
+// POST current weather
+router.post('/weather', (req, res) => {
+  const { isRaining, temperature } = req.body;
+  if (typeof isRaining === 'boolean') state.isRaining = isRaining;
+  if (typeof temperature === 'number') state.temperature = temperature;
+
+  // Immediately check auto logic
+  if (state.mode === 'auto') {
+    if (state.isRaining && state.windowState !== 'closed') {
+      state.windowState = 'closed';
+    } else if (!state.isRaining && state.temperature > state.autoOpenTemp && state.windowState !== 'open') {
+      state.windowState = 'open';
+    } else if (!state.isRaining && state.temperature <= state.autoOpenTemp && state.windowState !== 'closed') {
+      state.windowState = 'closed';
+    }
+  }
+  
   res.json({ success: true, state });
   req.app.get('io').emit('stateUpdate', state);
 });
